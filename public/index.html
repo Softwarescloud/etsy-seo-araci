@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Etsy SEO — Anahtar Kelime Aracı</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🔍</text></svg>" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◍</span>
+        <div>
+          <h1>Etsy SEO</h1>
+          <p>Kişisel anahtar kelime araştırma aracı</p>
+        </div>
+      </div>
+      <div class="status" id="status">bağlanıyor…</div>
+    </header>
+
+    <main>
+      <section class="search-panel">
+        <form id="search-form" class="search-row">
+          <input
+            id="seed"
+            type="search"
+            placeholder="Örn: personalized dog collar"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+          <label class="toggle" title="Rekabet verisi için kelime başına 1 ek API çağrısı yapılır">
+            <input type="checkbox" id="probe" checked />
+            <span>Rekabet verisi</span>
+          </label>
+          <button type="submit" id="submit">Araştır</button>
+        </form>
+        <div id="suggestions" class="suggestions"></div>
+      </section>
+
+      <section id="summary" class="summary hidden"></section>
+
+      <section id="results" class="results hidden">
+        <div class="results-head">
+          <h2>Bulunan anahtar kelimeler</h2>
+          <div class="results-actions">
+            <select id="sort">
+              <option value="opportunity">Fırsat skoruna göre</option>
+              <option value="demand">Talebe göre</option>
+              <option value="competition">Rekabet (düşük → yüksek)</option>
+              <option value="useRate">Kullanım oranına göre</option>
+            </select>
+            <button id="export" class="ghost">CSV indir</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="keyword-table">
+            <thead>
+              <tr>
+                <th>Anahtar kelime</th>
+                <th class="num">Talep</th>
+                <th class="num">Kullanım</th>
+                <th class="num">İlk 3</th>
+                <th class="num">Rekabet</th>
+                <th class="num">Fırsat</th>
+                <th class="trend-col">Trend</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="saved hidden" id="saved-section">
+        <div class="results-head">
+          <h2>Kayıtlı kelimeler</h2>
+          <div class="results-actions">
+            <button id="copy-tags" class="ghost">13 tag olarak kopyala</button>
+            <button id="clear-saved" class="ghost danger">Temizle</button>
+          </div>
+        </div>
+        <ul id="saved-list" class="saved-list"></ul>
+      </section>
+
+      <p class="hint">
+        Skorlar Etsy'nin <em>resmi</em> arama API'sinden alınan ilan örneklerinden hesaplanır.
+        Gerçek arama hacmini Etsy açıklamaz; bu yüzden “talep” değeri rakiplerin o kelimeyi ne sıklıkta
+        kullandığını gösteren bir göstergedir. Hacim geçmişi kendi veritabanında birikir.
+      </p>
+    </main>
+
+    <div id="detail" class="detail hidden">
+      <div class="detail-inner">
+        <button class="close" id="detail-close" aria-label="Kapat">×</button>
+        <div id="detail-body"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

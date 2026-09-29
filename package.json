@@ -1,0 +1,19 @@
+{
+  "name": "etsy-seo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types --disable-warning=ExperimentalWarning src/server.ts",
+    "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/server.ts",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning test/smoke.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

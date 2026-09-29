@@ -3,12 +3,18 @@
 eRank benzeri, **tek kişilik kullanım** için tasarlanmış ücretsiz Etsy anahtar kelime araştırma aracı.
 Veriler yalnızca Etsy'nin **resmi Open API v3**'ünden gelir; scraping yok, üyelik yok, aylık ücret yok.
 
-## Kurulum
+## Hızlı kurulum
+
+**Windows'ta** — [Code'u indir](https://github.com/Softwarescloud/etsy-seo-araci/archive/refs/heads/main.zip), klasörü aç, **`KUR.bat`** dosyasına çift tıkla. Bağımlılıkları kurar, `.env`'i oluşturur, API anahtarını sorar, sunucuyu başlatır ve tarayıcıyı açar.
+
+Elle kurmak istersen:
 
 ```bash
+git clone https://github.com/Softwarescloud/etsy-seo-araci.git
+cd etsy-seo-araci
 npm install
 copy .env.example .env      # Windows
-# cp .env.example .env      # macOS / Linux
+cp .env.example .env        # macOS / Linux
 ```
 
 `.env` içine Etsy API anahtarını gir:
@@ -18,6 +24,7 @@ ETSY_API_KEY=senin_anahtarın
 ```
 
 Anahtarı [etsy.com/developers/apps](https://www.etsy.com/developers/apps) adresinden alırsın.
+
 
 > **Önemli:** Araç, aramalarda `GET /v3/application/listings/active` endpoint'ini kullanır. Bu endpoint
 > Etsy's "kilitli" API'lerindendir; hesabında **Commercial / Production erişiminin açık olması** gerekir.
@@ -69,6 +76,7 @@ src/
   services/keywords.ts  çekirdek mantık: ilan toplama, kazı, skorlama
 public/                 arayüz (bağımlılıksız, sade HTML/CSS/JS)
 test/smoke.ts           çekirdek testler
+KUR.bat                 Windows'ta tek tıkla kurulum
 data/etsy-seo.db        SQLite veritabanı (otomatik oluşur)
 ```
 

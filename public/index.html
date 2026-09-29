@@ -84,6 +84,43 @@
         <ul id="saved-list" class="saved-list"></ul>
       </section>
 
+      <section class="shop" id="shop-section">
+        <div class="results-head">
+          <h2>Mağaza denetimi</h2>
+        </div>
+        <form id="shop-form" class="search-row">
+          <input
+            id="shop-id"
+            type="text"
+            placeholder="Mağaza adı — orn. magazaadi (sonu .etsy.com olmadan)"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="submit" id="shop-submit">Denetle</button>
+        </form>
+        <p class="note">
+          Denetimde kayıtlı kelimelerin ilanlarında kullanılıp kullanılmadığı da kontrol edilir.
+          Önce bir anahtar kelime araştırması yapıp yıldızlı kelimeleri kaydet.
+        </p>
+        <div id="shop-summary" class="summary hidden"></div>
+        <div id="shop-results" class="results hidden">
+          <div class="table-wrap">
+            <table id="audit-table">
+              <thead>
+                <tr>
+                  <th>İlan</th>
+                  <th class="num">Skor</th>
+                  <th>Not</th>
+                  <th class="num">Tag</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <p class="hint">
         Skorlar Etsy'nin <em>resmi</em> arama API'sinden alınan ilan örneklerinden hesaplanır.
         Gerçek arama hacmini Etsy açıklamaz; bu yüzden “talep” değeri rakiplerin o kelimeyi ne sıklıkta

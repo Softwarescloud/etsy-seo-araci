@@ -335,6 +335,58 @@ th.num {
   color: var(--muted);
 }
 
+.shop {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.shop .note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+.thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  object-fit: cover;
+  vertical-align: middle;
+  margin-right: 8px;
+  background: var(--surface-2);
+}
+
+.title-cell {
+  vertical-align: middle;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+
+td.finding {
+  white-space: normal;
+  max-width: 420px;
+  line-height: 1.35;
+}
+
+.sev.error {
+  color: var(--bad);
+}
+
+.sev.warning {
+  color: var(--warn);
+}
+
+.sev.info {
+  color: var(--muted);
+}
+
+.sev.ok {
+  color: var(--good);
+}
+
 .icon-btn {
   background: none;
   border: none;
@@ -342,6 +394,7 @@ th.num {
   font-size: 16px;
   padding: 2px 6px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .icon-btn:hover {

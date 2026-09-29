@@ -4,6 +4,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { assertConfig, config } from './config.ts';
 import { purgeExpiredCache } from './db.ts';
 import {
+  auditShop,
   deleteSavedKeyword,
   HttpError,
   listSaved,
@@ -71,6 +72,7 @@ const server = createServer(async (req, res) => {
         ok: true,
         apiKeyConfigured: Boolean(config.etsy.apiKey),
         shopConnected: Boolean(config.etsy.shopId),
+        defaultShopId: config.etsy.shopId || '',
         rateLimitPerSecond: config.limits.requestsPerSecond,
         purgedCacheRows: purgeExpiredCache(),
       });
@@ -113,6 +115,17 @@ const server = createServer(async (req, res) => {
     if (pathname === '/api/saved' && req.method === 'DELETE') {
       deleteSavedKeyword(url.searchParams.get('keyword') ?? '');
       sendJson(res, 200, { ok: true, items: listSaved() });
+      return;
+    }
+
+    if (pathname === '/api/shop/audit' && req.method === 'GET') {
+      const shopId = url.searchParams.get('shopId') || config.etsy.shopId;
+      const keywords = (url.searchParams.get('keywords') ?? '')
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean);
+      const result = await auditShop(shopId, keywords);
+      sendJson(res, 200, result);
       return;
     }
 

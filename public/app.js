@@ -326,7 +326,76 @@ $('#clear-saved').addEventListener('click', async () => {
   toast('Temizlendi');
 });
 
+// ---------- shop audit ----------
+
+$('#shop-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const shopId = $('#shop-id').value.trim();
+  if (!shopId) return;
+
+  const button = $('#shop-submit');
+  button.disabled = true;
+  button.textContent = 'Denetleniyor…';
+
+  try {
+    const keywords = [...state.saved].slice(0, 25);
+    const query = keywords.length ? `&keywords=${encodeURIComponent(keywords.join(','))}` : '';
+    const data = await api(`/api/shop/audit?shopId=${encodeURIComponent(shopId)}${query}`);
+    renderShopAudit(data);
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Denetle';
+  }
+});
+
+function renderShopAudit(data) {
+  const cards = [
+    { label: 'Mağaza', value: data.shopId },
+    { label: 'Ortalama skor', value: data.averageScore },
+    { label: 'İlan', value: `${data.listingsAnalyzed}/${data.listingsTotal}` },
+    { label: 'A / B / C / D', value: `${data.gradeCounts.A}/${data.gradeCounts.B}/${data.gradeCounts.C}/${data.gradeCounts.D}` },
+    { label: 'Tag doluluğu', value: `${data.tagSlotsUsed}/${data.tagSlotsTotal}` },
+  ];
+  $('#shop-summary').innerHTML = cards
+    .map((c) => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`)
+    .join('');
+  $('#shop-summary').classList.remove('hidden');
+
+  const worst = (a, b) => a.score - b.score;
+  $('#audit-table tbody').innerHTML = data.audits
+    .slice()
+    .sort(worst)
+    .map((a) => {
+      const top = a.findings.filter((f) => f.severity !== 'info');
+      const rest = a.findings.length - top.length;
+      const note = top.length
+        ? `<span class="sev ${top[0].severity}">${top[0].message}</span>${
+            top.length > 1 ? ` <span class="note">+${top.length - 1} sorun</span>` : ''
+          }`
+        : `<span class="sev ok">Sorun yok${rest ? ` <span class="note">(${rest} öneri)</span>` : ''}</span>`;
+
+      return `<tr>
+        <td>${a.image ? `<img class="thumb" src="${a.image}" alt="" />` : ''}<span class="title-cell">${a.title}</span></td>
+        <td class="num"><span class="score ${scoreClass(a.score)}">${a.score}</span> <span class="note">${a.grade}</span></td>
+        <td class="finding">${note}</td>
+        <td class="num">${a.tags.length}/13</td>
+        <td>${a.url ? `<a class="icon-btn" href="${a.url}" target="_blank" rel="noreferrer noopener" title="Etsy'de aç">↗</a>` : ''}</td>
+      </tr>`;
+    })
+    .join('');
+
+  $('#shop-results').classList.remove('hidden');
+}
+
 // ---------- boot ----------
 
-loadHealth();
-loadSaved().catch(() => {});
+async function boot() {
+  await loadHealth();
+  const health = await api('/api/health').catch(() => null);
+  if (health?.defaultShopId) $('#shop-id').value = health.defaultShopId;
+  await loadSaved().catch(() => {});
+}
+
+boot();

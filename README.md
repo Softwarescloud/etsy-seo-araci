@@ -39,24 +39,39 @@ npm run dev      # dosya değişince otomatik yeniden başlar
 npm test         # çekirdek algoritma testleri (API anahtarı gerektirmez)
 ```
 
-## Nasıl çalışır
+## Özellikler
 
-Aradığın terim için Etsy'nin ilk **96 aktif ilanını** (2 × 48) çeker, sonra:
+### 1. Anahtar kelime araştırması
+
+Aradığın terimin ilk **96 aktif ilanını** (2 × 48) çeker, sonra:
 
 1. Her ilanın **başlığından** tekli ve ikili kelime grupları çıkarır.
 2. Her ilanın **13 tag'inden** kelime ve kelime grupları çıkarır.
 3. Her kelime için kaç ilanda geçtiğini, ilk 3 / ilk 10 sırada kaç kez geçtiğini ve ortalama sırasını hesaplar.
 4. En güçlü birkaç kelimeyi doğrudan arayarak **toplam sonuç sayısını** (rekabet) ölçer.
 
-### Skorlar ne anlama geliyor
-
 | Skor | Anlamı |
 |---|---|
-| **Talep** (0-100) | Rakiplerin o kelimeyi ne sıklıkta kullandığı. Başlıktaki kullanım, tag'deki kullanım ve üst sıra yoğunluğunun ağırlıklı ortalaması. |
+| **Talep** (0-100) | Rakiplerin o kelimeyi ne sıklıkta kullandığı. |
 | **Kullanım %** | Örneklenen ilanların kaçında kelime geçiyor. |
 | **İlk 3** | Kelimenin ilk 3 sıradaki ilanlarda kaç kez geçtiği — nişin "taşıyıcı kelimeleri" burada çıkar. |
 | **Rekabet** | Kelime için Etsy'se verdiği toplam sonuç sayısı. |
 | **Fırsat** (0-100) | Talep ÷ rekabet. **En yüksek fırsat = en az rekabetle en çok talep.** |
+
+### 2. Mağaza denetimi
+
+Mağazanın aktif ilanlarını çekip her birini puanlar (A/B/C/D) ve şu kuralları kontrol eder:
+
+- Başlık 140 karakter sınırı, 40-70 ideal aralığı
+- Tag sayısı 13, tag uzunluğu 20 karakter
+- Yinelenen tag'ler
+- Boş veya çok kısa açıklama
+- **Kaydettiğin hedef kelimelerin ilanda kullanılıp kullanılmadığı**
+
+### 3. Kayıtlı kelimeler
+
+Yıldızladığın kelimeleri saklar, ilanlarına yapıştırmak için **13 tag** olarak kopyalar, CSV olarak dışa aktarır.
+Aynı kelimeyi tekrar araştırdıkça rekabet geçmişi birikir ve trend oku çıkar.
 
 > **Dürüstlük notu:** Etsy arama hacmini (aylık arama sayısı) API'de **açıklamaz** — eRank bu veriyi
 > Etsy'sen ticari anlaşma veya kendi topladığı tıklama verisiyle elde ediyor. Bu araç o sayıyı uydurmaz;
@@ -74,6 +89,7 @@ src/
   etsy/client.ts        API istemcisi: hız sınırlayıcı, retry, hata sınıflama
   services/text.ts      metin normalizasyonu, kelime gruplama, durdurma kelimeleri
   services/keywords.ts  çekirdek mantık: ilan toplama, kazı, skorlama
+  services/audit.ts     ilan denetimi: Etsy kuralları, puanlama, özet
 public/                 arayüz (bağımlılıksız, sade HTML/CSS/JS)
 test/smoke.ts           çekirdek testler
 KUR.bat                 Windows'ta tek tıkla kurulum
@@ -88,7 +104,10 @@ data/etsy-seo.db        SQLite veritabanı (otomatik oluşur)
 | `GET /api/keyword?seed=X&probe=1` | Ana araştırma. `probe=0` rekabet ölçümünü atlar (daha hızlı). |
 | `GET /api/history?keyword=X` | Kelimenin toplam sonuç sayısı geçmişi |
 | `GET /api/suggest?seed=X` | Yerel korpus tabanlı öneriler (Etsy'ye istek atmaz) |
-| `GET/POST/DELETE /api/saved` | Kayıtlı kelime listesi |
+| `GET /api/saved` | Kayıtlı kelime listesi |
+| `POST /api/saved` | Kelime kaydet — `{ "keyword": "dog collar", "note": "ilisikli" }` |
+| `DELETE /api/saved?keyword=X` | Kelime sil |
+| `GET /api/shop/audit?shopId=X&keywords=a,b` | Mağaza denetimi. `shopId` verilmezse `.env`'deki `ETSY_SHOP_ID` kullanılır. |
 
 ## Veri ve gizlilik
 

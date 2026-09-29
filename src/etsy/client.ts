@@ -162,3 +162,11 @@ export function getShopListings(shopId: string, limit: number, offset: number): 
     includes: 'MainImage,Shipping,Shop',
   });
 }
+
+/**
+ * Mağazanın AKTİF ilanları — denetim için gereken alanlar (description, tags)
+ * yalnızca bu uç noktada döner.
+ */
+export function getShopActiveListings(shopId: string, limit: number, offset: number): Promise<EtsySearchResult> {
+  return request<EtsySearchResult>(`/shops/${shopId}/listings/active`, { limit, offset });
+}

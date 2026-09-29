@@ -2,10 +2,12 @@ import { config } from '../config.ts';
 import {
   countActiveListings,
   EtsyApiError,
+  getShopActiveListings,
   searchActiveListings,
   type EtsyListing,
 } from '../etsy/client.ts';
 import { db, getCached, setCached, today, upsertKeyword } from '../db.ts';
+import { auditListing, summarize, type ListingAudit, type ShopAuditResult } from './audit.ts';
 import { extractTagPhrases, extractTitlePhrases, includesPhrase, normalize } from './text.ts';
 
 const PAGE_SIZE = 48;
@@ -436,4 +438,52 @@ export function saveKeyword(keyword: string, note = ''): void {
 
 export function deleteSavedKeyword(keyword: string): void {
   db.prepare('DELETE FROM saved_keywords WHERE keyword = ?').run(normalize(keyword));
+}
+
+// ---------------------------------------------------------------------------
+// Mağaza denetimi
+// ---------------------------------------------------------------------------
+
+export interface ShopAudit extends ShopAuditResult {}
+
+export async function auditShop(rawShopId: string, targetKeywords: string[] = []): Promise<ShopAudit> {
+  const shopId = rawShopId.trim();
+  if (!shopId) throw new HttpError(400, 'Mağaza ID gerekli.');
+
+  const keywords = [...new Set(targetKeywords.map(normalize).filter(Boolean))];
+  const cacheKey = `shop:${shopId}:${keywords.join('|')}`;
+
+  const cached = getCached<ShopAudit>(cacheKey, config.cache.listingTtlMs);
+  if (cached) return cached;
+
+  let listings: EtsyListing[];
+  let total = 0;
+  try {
+    const result = await getShopActiveListings(shopId, PAGE_SIZE, 0);
+    listings = result.results ?? [];
+    total = result.count ?? listings.length;
+  } catch (error) {
+    if (error instanceof EtsyApiError) {
+      throw new HttpError(
+        error.status,
+        error.status === 404
+          ? `Mağaza bulunamadı (${shopId}). Etsy mağaza ID'si sonu ".etsy.com" olmadan, sadece "magazaadi" şeklinde yazılır.`
+          : error.status === 401 || error.status === 403
+            ? 'Etsy mağaza ilanlarına erişimi reddetti. API anahtarının mağaza ilanları izni olmayabilir.'
+            : `Etsy API hatası (${error.status}).`,
+      );
+    }
+    throw error;
+  }
+
+  const audits = listings.map((listing) => auditListing(listing, keywords));
+  audits.sort((a, b) => a.score - b.score);
+
+  const result: ShopAudit = {
+    ...summarize(audits, shopId, total),
+    audits,
+  };
+
+  setCached(cacheKey, result, config.cache.listingTtlMs);
+  return result;
 }

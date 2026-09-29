@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
-import { assertConfig, config } from './config.ts';
+import { config, warnIfIncompleteConfig } from './config.ts';
 import { purgeExpiredCache } from './db.ts';
 import {
   auditShop,
@@ -141,7 +141,9 @@ const server = createServer(async (req, res) => {
   }
 });
 
-assertConfig();
+for (const warning of warnIfIncompleteConfig()) {
+  console.warn(`  [uyari] ${warning}\n`);
+}
 
 server.listen(config.port, config.host, () => {
   console.log(`\n  Etsy SEO aracı  ->  http://${config.host}:${config.port}\n`);

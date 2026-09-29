@@ -40,14 +40,15 @@ async function loadHealth() {
   try {
     const health = await api('/api/health');
     if (!health.apiKeyConfigured) {
-      el.textContent = 'ETSY_API_KEY eksik — .env dosyasını düzenle';
+      el.textContent = 'ETSY_API_KEY eksik — .env dosyasini duzenle';
       el.className = 'status bad';
+      toast('Once .env dosyasina API anahtarin ekle, sonra sunucuyu yeniden baslat.', true);
       return;
     }
-    el.textContent = `API bağlantısı hazır · ${health.rateLimitPerSecond} istek/sn${health.shopConnected ? ' · mağaza bağlı' : ''}`;
+    el.textContent = `API baglantisi hazir · ${health.rateLimitPerSecond} istek/sn${health.shopConnected ? ' · magaza bagli' : ''}`;
     el.className = 'status ok';
   } catch {
-    el.textContent = 'sunucuya ulaşılamıyor';
+    el.textContent = 'sunucuya ulasilamiyor';
     el.className = 'status bad';
   }
 }

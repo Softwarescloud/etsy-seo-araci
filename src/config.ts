@@ -49,10 +49,17 @@ export const config = {
   },
 } as const;
 
-export function assertConfig(): void {
+/**
+ * Eksik anahtar sunucuyu düşürmez: arayüz açılır, kullanıcı hatayı görür,
+ * anahtarı .env'e yazıp yeniden başlatır.
+ */
+export function warnIfIncompleteConfig(): string[] {
+  const warnings: string[] = [];
   if (!config.etsy.apiKey) {
-    throw new Error(
-      'ETSY_API_KEY tanımlı değil. .env dosyasına Etsy API anahtarını ekle (https://www.etsy.com/developers/apps adresinden alınır).',
+    warnings.push(
+      'ETSY_API_KEY tanımlı değil — anahtar kelime araması ve mağaza denetimi çalışmayacak. ' +
+        '.env dosyasına anahtarı ekle (https://www.etsy.com/developers/apps) ve sunucuyu yeniden başlat.',
     );
   }
+  return warnings;
 }

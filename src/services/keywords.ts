@@ -283,14 +283,7 @@ export async function research(rawSeed: string, options: ResearchOptions = {}): 
   try {
     collected = await collectListings(seed);
   } catch (error) {
-    if (error instanceof EtsyApiError) {
-      throw new HttpError(
-        error.status,
-        error.status === 401 || error.status === 403
-          ? 'Etsy API erişimi reddetti. /listings/active endpoint\'i için geliştirici hesabında "Commercial/Production" erişiminin açık olması gerekir.'
-          : `Etsy API hatası (${error.status}).`,
-      );
-    }
+    if (error instanceof EtsyApiError) throw new HttpError(error.status, explainEtsyError(error, 'arama'));
     throw error;
   }
 
@@ -361,6 +354,37 @@ export async function research(rawSeed: string, options: ResearchOptions = {}): 
     errors,
     generatedAt: new Date().toISOString(),
   };
+}
+
+/** Etsy'nin ham hata metnini kullanıcının ne yapması gerektiğini söyleyen mesaja çevirir. */
+function explainEtsyError(error: EtsyApiError, operation: string): string {
+  const detail = error.body.match(/"error"\s*:\s*"([^"]+)"/)?.[1]?.trim();
+
+  if (detail?.toLowerCase().includes('shared secret')) {
+    return (
+      'Etsy isteği reddetti: "Shared secret is required in x-api-key header." ' +
+      'Etsy başlıkta "keystring:shared_secret" biçimini bekler. ' +
+      '.env içinde ETSY_API_KEY ve ETSY_SHARED_SECRET değerlerinin ikisini de tanımla — ' +
+      'ikisi de https://www.etsy.com/developers/your-apps sayfasında.'
+    );
+  }
+
+  if (detail?.toLowerCase().includes('client id')) {
+    return 'Etsy isteği reddetti: uygulama kimliğini tanımadı. Keystring\'in doğru uygulamaya ait olduğunu doğrula.';
+  }
+
+  if (error.status === 403 || error.status === 401) {
+    return (
+      `Etsy isteği reddetti (${error.status}). ${detail ?? ''} ` +
+      'Uygulamanın erişim durumunu https://www.etsy.com/developers/your-apps sayfasından kontrol et.'
+    ).trim();
+  }
+
+  if (error.status === 404) {
+    return `Uç nokta bulunamadı (${operation}): ${error.path}. Mağaza ID'sini kontrol et.`;
+  }
+
+  return `Etsy API hatası (${error.status}, ${operation}): ${detail ?? error.body.slice(0, 200)}`;
 }
 
 export class HttpError extends Error {
@@ -469,16 +493,7 @@ export async function auditShop(
     listings = result.results ?? [];
     total = result.count ?? listings.length;
   } catch (error) {
-    if (error instanceof EtsyApiError) {
-      throw new HttpError(
-        error.status,
-        error.status === 404
-          ? `Mağaza bulunamadı (${shopId}). Etsy mağaza ID'si sonu ".etsy.com" olmadan, sadece "magazaadi" şeklinde yazılır.`
-          : error.status === 401 || error.status === 403
-            ? 'Etsy mağaza ilanlarına erişimi reddetti. API anahtarının mağaza ilanları izni olmayabilir.'
-            : `Etsy API hatası (${error.status}).`,
-      );
-    }
+    if (error instanceof EtsyApiError) throw new HttpError(error.status, explainEtsyError(error, 'mağaza denetimi'));
     throw error;
   }
 

@@ -1,4 +1,4 @@
-import { config } from '../config.ts';
+import { config, etsyApiKeyHeader } from '../config.ts';
 
 class TokenBucket {
   private tokens: number;
@@ -62,7 +62,7 @@ async function request<T>(path: string, query?: Query, attempt = 0): Promise<T> 
   await bucket.take();
 
   const headers: Record<string, string> = {
-    'x-api-key': config.etsy.apiKey,
+    'x-api-key': etsyApiKeyHeader(),
     accept: 'application/json',
   };
   if (config.etsy.accessToken) headers.authorization = `Bearer ${config.etsy.accessToken}`;

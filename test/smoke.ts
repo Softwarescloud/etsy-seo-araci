@@ -8,6 +8,7 @@ import { extractTagPhrases, extractTitlePhrases, includesPhrase, normalize } fro
 import { demandScore, opportunityScore } from '../src/services/keywords.ts';
 import { auditListing, LIMITS, summarize } from '../src/services/audit.ts';
 import { isDue, keywordTrends, nextRunAt, runHistory, shopScoreSeries, TASKS } from '../src/services/automation.ts';
+import { buildApiKeyHeader } from '../src/config.ts';
 import type { EtsyListing } from '../src/etsy/client.ts';
 
 function listing(overrides: Partial<EtsyListing> = {}): EtsyListing {
@@ -209,6 +210,25 @@ test('boş veritabanında hata vermez', () => {
   assert.deepEqual(runHistory(undefined, 5), []);
   assert.deepEqual(shopScoreSeries('olmayan-magaza'), []);
   assert.deepEqual(keywordTrends(), []);
+});
+
+console.log('\netsy kimlik bilgileri');
+
+test('keystring ve shared secret birleştirilir', () => {
+  assert.equal(buildApiKeyHeader('abc123', 'secret9'), 'abc123:secret9');
+});
+
+test('iki nokta üstü içermeyen anahtar olduğu gibi kalır', () => {
+  assert.equal(buildApiKeyHeader('abc123', ''), 'abc123');
+});
+
+test('kullanıcı zaten "a:b" yazdıysa çift eklemez', () => {
+  assert.equal(buildApiKeyHeader('abc123:secret9', 'baska'), 'abc123:secret9');
+  assert.equal(buildApiKeyHeader('abc123:secret9', ''), 'abc123:secret9');
+});
+
+test('shared secret içeren tireli karakterler sorun çıkarmaz', () => {
+  assert.equal(buildApiKeyHeader('k', 'a-b_c1'), 'k:a-b_c1');
 });
 
 console.log(`\n${passed} test geçti.\n`);

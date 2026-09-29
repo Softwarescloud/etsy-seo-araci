@@ -81,8 +81,10 @@ const server = createServer(async (req, res) => {
       sendJson(res, 200, {
         ok: true,
         apiKeyConfigured: Boolean(config.etsy.apiKey),
+        sharedSecretConfigured: Boolean(config.etsy.sharedSecret || config.etsy.apiKey.includes(':')),
         shopConnected: Boolean(config.etsy.shopId),
         defaultShopId: config.etsy.shopId || '',
+        warnings: warnIfIncompleteConfig(),
         rateLimitPerSecond: config.limits.requestsPerSecond,
         purgedCacheRows: purgeExpiredCache(),
       });

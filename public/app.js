@@ -39,14 +39,20 @@ async function loadHealth() {
   const el = $('#status');
   try {
     const health = await api('/api/health');
+    const fatal = (health.warnings ?? []).filter((w) => w.includes('ETSY_API_KEY') || w.includes('SHARED_SECRET'));
+
     if (!health.apiKeyConfigured) {
-      el.textContent = 'ETSY_API_KEY eksik — .env dosyasini duzenle';
+      el.textContent = 'ETSY_API_KEY eksik';
       el.className = 'status bad';
-      toast('Once .env dosyasina API anahtarin ekle, sonra sunucuyu yeniden baslat.', true);
-      return;
+    } else if (!health.sharedSecretConfigured) {
+      el.textContent = 'shared secret eksik';
+      el.className = 'status bad';
+    } else {
+      el.textContent = `API hazir · ${health.rateLimitPerSecond} istek/sn${health.shopConnected ? ' · magaza bagli' : ''}`;
+      el.className = 'status ok';
     }
-    el.textContent = `API baglantisi hazir · ${health.rateLimitPerSecond} istek/sn${health.shopConnected ? ' · magaza bagli' : ''}`;
-    el.className = 'status ok';
+
+    for (const warning of fatal) toast(warning, true);
   } catch {
     el.textContent = 'sunucuya ulasilamiyor';
     el.className = 'status bad';

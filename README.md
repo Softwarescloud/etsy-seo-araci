@@ -17,19 +17,24 @@ copy .env.example .env      # Windows
 cp .env.example .env        # macOS / Linux
 ```
 
-`.env` içine Etsy API anahtarını gir:
+`.env` içine Etsy kimlik bilgilerini gir:
 
 ```
-ETSY_API_KEY=senin_anahtarın
+ETSY_API_KEY=<keystring>
+ETSY_SHARED_SECRET=<shared secret>
 ```
 
-Anahtarı [etsy.com/developers/apps](https://www.etsy.com/developers/apps) adresinden alırsın.
+> **Önemli:** Etsy `x-api-key` başlığında **iki değeri nokta üst üste** ister: `keystring:shared_secret`.
+> İkisini `ETSY_API_KEY=a:b` biçiminde tek satırda da yazabilirsin. Sadece keystring yetmez —
+> Etsy `"Shared secret is required in x-api-key header"` hatası döndürür.
 
+İki değer de https://www.etsy.com/developers/your-apps sayfasında. Mağaza denetimi için
+`ETSY_SHOP_ID` de gerekir (mağaza adının `.etsy.com` eki olmadan).
 
 > **Önemli:** Araç, aramalarda `GET /v3/application/listings/active` endpoint'ini kullanır. Bu endpoint
-> Etsy's "kilitli" API'lerindendir; hesabında **Commercial / Production erişiminin açık olması** gerekir.
-> Erişim kapalıysa arama 403 döner ve araç bunu açık bir mesajla bildirir. Anahtarı ücretsiz alabilirsin,
-> ancak Etsy hesabına bağlı ticari onay isteyebilir.
+> Etsy's "kilitli" API'lerindendir; uygulamanın **Production/Commercial** erişimi açık olmadan arama
+> 403 döner ve araç bunu ekranda açıkça bildirir.
+
 
 Çalıştır:
 

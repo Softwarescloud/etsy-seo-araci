@@ -31,6 +31,7 @@ export const config = {
   dbPath: str('DB_PATH', resolve(process.cwd(), 'data', 'etsy-seo.db')),
   etsy: {
     apiKey: str('ETSY_API_KEY'),
+    sharedSecret: str('ETSY_SHARED_SECRET'),
     apiBase: str('ETSY_API_BASE', 'https://openapi.etsy.com/v3/application'),
     shopId: str('ETSY_SHOP_ID'),
     accessToken: str('ETSY_ACCESS_TOKEN'),
@@ -57,16 +58,45 @@ export const config = {
 } as const;
 
 /**
+ * Etsy `x-api-key` başlığı iki parçadan oluşur: `keystring:shared_secret`
+ * (https://www.etsy.com/developers/your-apps). İkisi ayrı ayrı tanımlanmışsa
+ * burada birleştirilir; kullanıcı zaten "a:b" biçiminde yazdıysa olduğu gibi kalır.
+ */
+export function buildApiKeyHeader(keystring: string, sharedSecret: string): string {
+  if (keystring.includes(':')) return keystring;
+  return sharedSecret ? `${keystring}:${sharedSecret}` : keystring;
+}
+
+export function etsyApiKeyHeader(): string {
+  return buildApiKeyHeader(config.etsy.apiKey, config.etsy.sharedSecret);
+}
+
+/**
  * Eksik anahtar sunucuyu düşürmez: arayüz açılır, kullanıcı hatayı görür,
  * anahtarı .env'e yazıp yeniden başlatır.
  */
 export function warnIfIncompleteConfig(): string[] {
   const warnings: string[] = [];
-  if (!config.etsy.apiKey) {
+  const { apiKey, sharedSecret } = config.etsy;
+
+  if (!apiKey) {
     warnings.push(
       'ETSY_API_KEY tanımlı değil — anahtar kelime araması ve mağaza denetimi çalışmayacak. ' +
-        '.env dosyasına anahtarı ekle (https://www.etsy.com/developers/apps) ve sunucuyu yeniden başlat.',
+        'https://www.etsy.com/developers/your-apps adresinden "Keystring" ve "Shared secret" değerlerini al.',
+    );
+  } else if (!sharedSecret && !apiKey.includes(':')) {
+    warnings.push(
+      'ETSY_SHARED_SECRET eksik. Etsy x-api-key başlığında "keystring:shared_secret" biçimini bekler; ' +
+        'sadece keystring ile gelen istekler "Shared secret is required in x-api-key header" hatasıyla reddedilir.',
     );
   }
+
+  if (!config.etsy.shopId) {
+    warnings.push(
+      'ETSY_SHOP_ID tanımlı değil — Mağaza Denetimi ve otomasyondaki mağaza görevi çalışmayacak. ' +
+        'Değer, mağaza adının ".etsy.com" eki olmadan yazılmış hâlidir.',
+    );
+  }
+
   return warnings;
 }

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { extractTagPhrases, extractTitlePhrases, includesPhrase, normalize } from '../src/services/text.ts';
 import { demandScore, opportunityScore } from '../src/services/keywords.ts';
 import { auditListing, LIMITS, summarize } from '../src/services/audit.ts';
+import { isDue, keywordTrends, nextRunAt, runHistory, shopScoreSeries, TASKS } from '../src/services/automation.ts';
 import type { EtsyListing } from '../src/etsy/client.ts';
 
 function listing(overrides: Partial<EtsyListing> = {}): EtsyListing {
@@ -166,6 +167,48 @@ test('özet not dağılımını ve tag doluluğunu hesaplar', () => {
     Object.values(result.gradeCounts).reduce((a, b) => a + b, 0),
     2,
   );
+});
+
+console.log('\notomasyon');
+
+test('zamanlanmış iki görev tanımlı', () => {
+  assert.deepEqual(Object.keys(TASKS).sort(), ['keyword_refresh', 'shop_audit']);
+});
+
+test('saat henüz geçmediyse çalışma bugün', () => {
+  const now = new Date('2026-03-10T02:00:00');
+  const next = nextRunAt(now, 4);
+  assert.equal(next.getDate(), 10);
+  assert.equal(next.getHours(), 4);
+});
+
+test('saat geçtiyse çalışma ertesi güne kayar', () => {
+  const now = new Date('2026-03-10T09:30:00');
+  const next = nextRunAt(now, 4);
+  assert.equal(next.getDate(), 11);
+  assert.equal(next.getHours(), 4);
+});
+
+test('saat tam sınırdaysa bir sonraki güne geçer', () => {
+  const now = new Date('2026-03-10T04:00:00');
+  assert.equal(nextRunAt(now, 4).getDate(), 11);
+});
+
+test('saat 23 ve 0 sınırlarında çalışır', () => {
+  assert.equal(nextRunAt(new Date('2026-03-10T10:00:00'), 23).getHours(), 23);
+  assert.equal(nextRunAt(new Date('2026-03-10T23:30:00'), 0).getDate(), 11);
+});
+
+test('isDue yalnızca zaman geldiğinde true', () => {
+  const due = new Date('2026-03-10T04:00:00');
+  assert.equal(isDue(due, new Date('2026-03-10T04:00:01')), true);
+  assert.equal(isDue(due, new Date('2026-03-10T03:59:59')), false);
+});
+
+test('boş veritabanında hata vermez', () => {
+  assert.deepEqual(runHistory(undefined, 5), []);
+  assert.deepEqual(shopScoreSeries('olmayan-magaza'), []);
+  assert.deepEqual(keywordTrends(), []);
 });
 
 console.log(`\n${passed} test geçti.\n`);

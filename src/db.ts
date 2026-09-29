@@ -54,6 +54,28 @@ CREATE TABLE IF NOT EXISTS saved_keywords (
   note       TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS automation_runs (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  task        TEXT NOT NULL,
+  status      TEXT NOT NULL,
+  message     TEXT NOT NULL DEFAULT '',
+  started_at  TEXT NOT NULL,
+  finished_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_runs_task ON automation_runs(task, started_at DESC);
+
+CREATE TABLE IF NOT EXISTS shop_audit_daily (
+  shop_id    TEXT NOT NULL,
+  listing_id INTEGER NOT NULL,
+  day        TEXT NOT NULL,
+  score      INTEGER NOT NULL,
+  grade      TEXT NOT NULL,
+  tag_count  INTEGER NOT NULL,
+  title      TEXT NOT NULL,
+  PRIMARY KEY (shop_id, listing_id, day)
+);
+CREATE INDEX IF NOT EXISTS idx_shop_daily_day ON shop_audit_daily(shop_id, day DESC);
 `);
 
 export function nowIso(): string {

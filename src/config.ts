@@ -47,6 +47,13 @@ export const config = {
     listingTtlMs: int('LISTING_CACHE_TTL_MINUTES', 180) * 60_000,
     resultCountTtlMs: int('RESULT_COUNT_TTL_MINUTES', 720) * 60_000,
   },
+  automation: {
+    enabled: str('AUTOMATION_ENABLED', '1') !== '0',
+    // 0-23 arası, sunucunun kendi saat diliminde
+    hour: Math.min(23, Math.max(0, int('AUTOMATION_HOUR', 4))),
+    // Günde kaç kayıtlı kelimenin rekabeti tazelensin (Etsy kotasını korur)
+    maxKeywordRefresh: int('MAX_KEYWORD_REFRESH', 15),
+  },
 } as const;
 
 /**

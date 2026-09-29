@@ -446,15 +446,21 @@ export function deleteSavedKeyword(keyword: string): void {
 
 export interface ShopAudit extends ShopAuditResult {}
 
-export async function auditShop(rawShopId: string, targetKeywords: string[] = []): Promise<ShopAudit> {
+export async function auditShop(
+  rawShopId: string,
+  targetKeywords: string[] = [],
+  options: { force?: boolean } = {},
+): Promise<ShopAudit> {
   const shopId = rawShopId.trim();
   if (!shopId) throw new HttpError(400, 'Mağaza ID gerekli.');
 
   const keywords = [...new Set(targetKeywords.map(normalize).filter(Boolean))];
   const cacheKey = `shop:${shopId}:${keywords.join('|')}`;
 
-  const cached = getCached<ShopAudit>(cacheKey, config.cache.listingTtlMs);
-  if (cached) return cached;
+  if (!options.force) {
+    const cached = getCached<ShopAudit>(cacheKey, config.cache.listingTtlMs);
+    if (cached) return cached;
+  }
 
   let listings: EtsyListing[];
   let total = 0;

@@ -84,10 +84,34 @@
         <ul id="saved-list" class="saved-list"></ul>
       </section>
 
-      <section class="shop" id="shop-section">
+      <section class="automation" id="automation-section">
         <div class="results-head">
-          <h2>Mağaza denetimi</h2>
+          <h2>Otomasyon</h2>
+          <div class="results-actions">
+            <button id="run-now" class="ghost">Şimdi çalıştır</button>
+            <button id="refresh-auto" class="ghost">Yenile</button>
+          </div>
         </div>
+        <div id="auto-status" class="summary"></div>
+        <p class="note" id="auto-note"></p>
+
+        <div id="score-series-wrap" class="hidden">
+          <h3 class="sub">Mağaza sağlık skoru — günlük ortalama</h3>
+          <div id="score-series"></div>
+        </div>
+
+        <div id="keyword-trends-wrap" class="hidden">
+          <h3 class="sub">Kayıtlı kelimelerde rekabet değişimi</h3>
+          <ul id="keyword-trends" class="trend-list"></ul>
+        </div>
+
+        <div id="runs-wrap" class="hidden">
+          <h3 class="sub">Son koşular</h3>
+          <ul id="runs-list" class="runs-list"></ul>
+        </div>
+      </section>
+
+      <section class="shop" id="shop-section">
         <form id="shop-form" class="search-row">
           <input
             id="shop-id"

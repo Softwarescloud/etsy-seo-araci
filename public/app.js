@@ -245,7 +245,7 @@ async function openDetail(keyword) {
   $('#detail').classList.remove('hidden');
 }
 
-function sparkline(values) {
+function sparkline(values, label) {
   const max = Math.max(...values);
   const min = Math.min(...values);
   const span = max - min || 1;
@@ -257,7 +257,7 @@ function sparkline(values) {
   return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none">
     <polyline fill="none" stroke="#f1641e" stroke-width="0.8" points="${points}" vector-effect="non-scaling-stroke" />
   </svg>
-  <p class="note">${fmt.format(min)} → ${fmt.format(max)} sonuç</p>`;
+  <p class="note">${label ? `${label} · ` : ''}${values.length} günlük kayıt</p>`;
 }
 
 $('#detail-close').addEventListener('click', () => $('#detail').classList.add('hidden'));
@@ -326,6 +326,123 @@ $('#clear-saved').addEventListener('click', async () => {
   await loadSaved();
   toast('Temizlendi');
 });
+
+// ---------- automation ----------
+
+const TASK_LABELS = {
+  shop_audit: 'Mağaza denetimi',
+  keyword_refresh: 'Kelime tazeleme',
+};
+
+function fmtDateTime(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('tr-TR');
+}
+
+async function loadAutomation() {
+  try {
+    const status = await api('/api/automation/status');
+    const cards = [
+      { label: 'Durum', value: status.enabled ? 'Açık' : 'Kapalı' },
+      { label: 'Çalışma saati', value: `${String(status.hour).padStart(2, '0')}:00` },
+      { label: 'Sonraki koşu', value: fmtDateTime(status.nextRunAt) },
+      { label: 'Mağaza', value: status.shopConfigured ? 'bağlı' : 'bağlı değil' },
+      { label: 'Kayıtlı kelime', value: status.savedKeywords },
+    ];
+    $('#auto-status').innerHTML = cards
+      .map((c) => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`)
+      .join('');
+
+    const problems = [];
+    if (!status.shopConfigured) problems.push('.env içinde ETSY_SHOP_ID tanımlı değil — mağaza denetimi çalışmayacak.');
+    if (status.savedKeywords === 0) problems.push('Kayıtlı kelime yok — kelime tazeleme çalışmayacak.');
+    $('#auto-note').textContent = problems.length
+      ? problems.join(' ')
+      : 'Her gece otomatik çalışır. Sunucu bu saatlerde açık olmalı.';
+
+    const history = await api('/api/automation/history');
+
+    renderScoreSeries(history.scoreSeries);
+    renderKeywordTrends(history.keywordTrends);
+    renderRuns(history.runs);
+  } catch (error) {
+    $('#auto-note').textContent = `Otomasyon bilgisi alınamadı: ${error.message}`;
+  }
+}
+
+function renderScoreSeries(series) {
+  const wrap = $('#score-series-wrap');
+  if (!series?.length) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+  $('#score-series').innerHTML = sparkline(series.map((p) => p.score), series[series.length - 1].score.toFixed(1));
+}
+
+function renderKeywordTrends(trends) {
+  const wrap = $('#keyword-trends-wrap');
+  const rows = (trends ?? []).filter((t) => t.change !== null);
+  if (!rows.length) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+  $('#keyword-trends').innerHTML = rows
+    .map((t) => {
+      const icon = t.direction === 'up' ? '▲' : t.direction === 'down' ? '▼' : '▬';
+      const pct = t.previous ? (((t.current - t.previous) / t.previous) * 100).toFixed(1) : '0.0';
+      const cls = t.direction === 'up' ? 'down' : t.direction === 'down' ? 'up' : 'flat';
+      return `<li>
+        <span>${t.keyword}</span>
+        <span class="trend ${cls}">${icon} ${pct}% <span class="note">(${fmt.format(t.previous)} → ${fmt.format(t.current)})</span></span>
+      </li>`;
+    })
+    .join('');
+}
+
+function renderRuns(runs) {
+  const wrap = $('#runs-wrap');
+  if (!runs?.length) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+  $('#runs-list').innerHTML = runs
+    .slice(0, 10)
+    .map((r) => {
+      const icon = r.status === 'ok' ? '✓' : r.status === 'skipped' ? '–' : '✗';
+      const cls = r.status === 'ok' ? 'up' : r.status === 'skipped' ? 'flat' : 'down';
+      return `<li>
+        <span class="trend ${cls}">${icon}</span>
+        <span>${TASK_LABELS[r.task] ?? r.task}</span>
+        <span class="note">${r.message}</span>
+        <span class="note">${fmtDateTime(r.startedAt)}</span>
+      </li>`;
+    })
+    .join('');
+}
+
+$('#run-now').addEventListener('click', async () => {
+  const button = $('#run-now');
+  button.disabled = true;
+  button.textContent = 'Çalışıyor…';
+  try {
+    const data = await api('/api/automation/run', { method: 'POST' });
+    renderRuns(data.runs);
+    const failed = data.results.filter((r) => r.status === 'error');
+    if (failed.length) toast(`Hata: ${failed[0].message}`, true);
+    else toast(data.results.map((r) => r.message).join(' · '));
+    loadAutomation();
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Şimdi çalıştır';
+  }
+});
+
+$('#refresh-auto').addEventListener('click', loadAutomation);
 
 // ---------- shop audit ----------
 
@@ -397,6 +514,7 @@ async function boot() {
   const health = await api('/api/health').catch(() => null);
   if (health?.defaultShopId) $('#shop-id').value = health.defaultShopId;
   await loadSaved().catch(() => {});
+  await loadAutomation();
 }
 
 boot();

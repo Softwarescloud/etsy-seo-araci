@@ -36,6 +36,7 @@ Anahtarı [etsy.com/developers/apps](https://www.etsy.com/developers/apps) adres
 ```bash
 npm start        # http://127.0.0.1:4310
 npm run dev      # dosya değişince otomatik yeniden başlar
+npm run once     # otomasyonu bir kez çalıştırıp kapanır (Görev Zamanlayıcı için)
 npm test         # çekirdek algoritma testleri (API anahtarı gerektirmez)
 ```
 
@@ -79,6 +80,25 @@ Aynı kelimeyi tekrar araştırdıkça rekabet geçmişi birikir ve trend oku ç
 > sayısını zaman içinde kendi veritabanında biriktirir. Gerçek hacim istiyorsan Google Keyword Planner
 > (ücretsiz) ile Etsy için bir A/B testi yapmak en doğru yol.
 
+### 4. Zamanlanmış otomasyon
+
+Her gece iki görev otomatik çalışır ve sonuçları veritabanına yazar:
+
+| Görev | Ne yapar |
+|---|---|
+| **Mağaza denetimi** | Aktif ilanları yeniden puanlar, günlük geçmişe yazar. Skoru düşen ilanları gösterir. |
+| **Kelime tazeleme** | Kayıtlı kelimelerin toplam sonuç sayısını (rekabet) yeniden ölçer. Böylece gerçek trend verisi oluşur. |
+
+İki çalışma biçimi var:
+
+- **Sunucu açıkken** — `npm start` çalışıyorsa kendiliğinden tetiklenir (`.env`'deki `AUTOMATION_HOUR`).
+- **Sunucu kapalıyken** — `OTOMASYON.bat` çalıştır: Windows Görev Zamanlayıcı'ya görev kaydeder, her gün 04:00'te `npm run once` çağırır, işleyip kapanır.
+
+Arayüzdeki **Otomasyon** panelinden: sonraki koşu saati, son koşular, mağaza sağlık skorunun günlük grafiği, kayıtlı kelimelerdeki rekabet değişimi ve **"Şimdi çalıştır"** butonu.
+
+> ⚠️ Otomasyon **sunucunun açık olduğu saatlerde** Etsy'ye istek atar. Bilgisayarın gece açık kalması ya da
+> Görev Zamanlayıcı kullanman gerekir.
+
 ## Dosya yapısı
 
 ```
@@ -90,9 +110,11 @@ src/
   services/text.ts      metin normalizasyonu, kelime gruplama, durdurma kelimeleri
   services/keywords.ts  çekirdek mantık: ilan toplama, kazı, skorlama
   services/audit.ts     ilan denetimi: Etsy kuralları, puanlama, özet
+  services/automation.ts zamanlanmış görevler, koşu geçmişi, trend raporları
 public/                 arayüz (bağımlılıksız, sade HTML/CSS/JS)
 test/smoke.ts           çekirdek testler
 KUR.bat                 Windows'ta tek tıkla kurulum
+OTOMASYON.bat           Windows Görev Zamanlayıcı'ya günlük görev kaydeder
 data/etsy-seo.db        SQLite veritabanı (otomatik oluşur)
 ```
 
@@ -108,6 +130,9 @@ data/etsy-seo.db        SQLite veritabanı (otomatik oluşur)
 | `POST /api/saved` | Kelime kaydet — `{ "keyword": "dog collar", "note": "ilisikli" }` |
 | `DELETE /api/saved?keyword=X` | Kelime sil |
 | `GET /api/shop/audit?shopId=X&keywords=a,b` | Mağaza denetimi. `shopId` verilmezse `.env`'deki `ETSY_SHOP_ID` kullanılır. |
+| `GET /api/automation/status` | Otomasyon açık mı, sonraki koşu ne zaman, son koşular |
+| `POST /api/automation/run[?task=X]` | Görevleri elle çalıştır. `task` verilmezse ikisi de çalışır. |
+| `GET /api/automation/history` | Koşu geçmişi, mağaza skor serisi, kelime trendleri |
 
 ## Veri ve gizlilik
 

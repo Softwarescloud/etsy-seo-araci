@@ -13,6 +13,16 @@ import {
   saveKeyword,
   searchHistory,
 } from './services/keywords.ts';
+import {
+  keywordTrends,
+  runHistory,
+  runTask,
+  shopHistory,
+  shopScoreSeries,
+  startScheduler,
+  TASKS,
+  type TaskName,
+} from './services/automation.ts';
 
 const publicDir = resolve(process.cwd(), 'public');
 
@@ -129,6 +139,41 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (pathname === '/api/automation/status' && req.method === 'GET') {
+      sendJson(res, 200, {
+        enabled: config.automation.enabled,
+        hour: config.automation.hour,
+        shopConfigured: Boolean(config.etsy.shopId),
+        savedKeywords: listSaved().length,
+        nextRunAt: scheduler.next().toISOString(),
+        runs: runHistory(undefined, 10),
+      });
+      return;
+    }
+
+    if (pathname === '/api/automation/run' && req.method === 'POST') {
+      const requested = url.searchParams.get('task');
+      const tasks = (requested ? [requested] : Object.keys(TASKS)) as TaskName[];
+      const invalid = tasks.find((t) => !(t in TASKS));
+      if (invalid) throw new HttpError(400, `Bilinmeyen görev: ${invalid}`);
+
+      const results = [];
+      for (const task of tasks) results.push(await runTask(task));
+      sendJson(res, 200, { results, runs: runHistory(undefined, 10) });
+      return;
+    }
+
+    if (pathname === '/api/automation/history' && req.method === 'GET') {
+      const task = url.searchParams.get('task') as TaskName | null;
+      sendJson(res, 200, {
+        runs: runHistory(task ?? undefined, 30),
+        scoreSeries: config.etsy.shopId ? shopScoreSeries(config.etsy.shopId) : [],
+        listings: config.etsy.shopId ? shopHistory(config.etsy.shopId) : {},
+        keywordTrends: keywordTrends(),
+      });
+      return;
+    }
+
     sendJson(res, 404, { error: 'Bilinmeyen endpoint' });
   } catch (error) {
     if (error instanceof HttpError) {
@@ -145,8 +190,18 @@ for (const warning of warnIfIncompleteConfig()) {
   console.warn(`  [uyari] ${warning}\n`);
 }
 
+const scheduler = startScheduler(async (task) => {
+  const outcome = await runTask(task);
+  const icon = outcome.status === 'ok' ? '✓' : outcome.status === 'skipped' ? '–' : '✗';
+  console.log(`  [otomasyon] ${icon} ${task}: ${outcome.message}`);
+});
+
 server.listen(config.port, config.host, () => {
   console.log(`\n  Etsy SEO aracı  ->  http://${config.host}:${config.port}\n`);
+  if (config.automation.enabled) {
+    console.log(`  Otomasyon: her gün saat ${String(config.automation.hour).padStart(2, '0')}:00`);
+    console.log(`  Sonraki çalışma: ${scheduler.next().toLocaleString('tr-TR')}\n`);
+  }
 });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node --watch --experimental-strip-types --disable-warning=ExperimentalWarning src/server.ts",
     "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/server.ts",
+    "once": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/run-once.ts",
     "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning test/smoke.ts",
     "typecheck": "tsc --noEmit"
   },
